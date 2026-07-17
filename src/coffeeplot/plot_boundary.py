@@ -38,7 +38,7 @@ class Observation:
 @dataclass(slots=True)
 class SeriesDefinition:
     """
-    A single, isolated stream definition for one specific metric which can be reused for atomic write,  of data over time .
+    A single, isolated stream definition for one specific metric which can be reused for atomic write, of data over time .
     """
     label: str
     unit: str | None = None
