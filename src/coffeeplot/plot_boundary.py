@@ -61,46 +61,35 @@ class SeriesDefinition:
             "metadata": self.metadata,
         }
 
-@dataclass(slots=True)
 class SeriesMemory:
     """
-    A series with an observation attribute held in memory
+    A series with an observation attribute held in memory.
 
-    from_dict() is not necesary because the best dict is not a dict but is instead a SeriesMemory instance.
+    For an analysis of why this is structured as an explicit standard class
+    rather than a dataclass, see: docs/dataclasses_as_explicit_plain_classes.md
     """
-    definition: SeriesDefinition
-    observations: list[Observation] = field(default_factory=list)
-    
-    
-    logger.debug(f"{observations=}")
-    def consume_observation(self,observation:Observation):
-        """The rich man's append."""
-        logger.debug(f"{self.definition=}")
-        logger.debug(f"{observation=}")
-        logger.debug(f"{self.observations=}")
-        self.observations.append(observation)
-
-class SeriesMemory:
-    __slots__ = ("definition", "observations")  # slots=True behavior
+    __slots__ = ("definition", "observations")  # # slots=True behavior; Memory efficiency
 
     def __init__(self, definition: SeriesDefinition, observations: list[Observation] = None) -> None:
         self.definition = definition
+        # Explicit evaluation avoids default mutable traps cleanly
         self.observations = observations if observations is not None else []
         self.__post_init__()
 
     def __post_init__(self) -> None:
         # Runs automatically right after __init__ finishes
+        # Internal configuration hooks run transparently
+        # Calling this __post_init__ explicitly in necessary in the __init__ for a plain class that is meant to accomplish waht a dataclass accomplishes and more.
+        # The explicit call is a bit of a hack of the concept, because it is meant for a decorated dataclass.
         logger.debug(f"Initialized SeriesMemory for: {self.definition.label}")
 
     def __repr__(self) -> str:
-        """See with !r operator, like: logger.debug(f"Current series_memory_instance state: {series_memory_instance!r}")"""
         return f"SeriesMemory(definition={self.definition!r}, observations={self.observations!r})"
     
-    def consume_observation(self,observation:Observation):
+    def consume_observation(self, observation: Observation) -> None:
         """The rich man's append."""
         logger.debug(f"{self.definition=}")
         logger.debug(f"{observation=}")
-        #logger.debug(f"{self.observations=}")
         self.observations.append(observation)
 
 @dataclass(slots=True)
