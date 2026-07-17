@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import time
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 @dataclass(slots=True)
 class Observation:
@@ -44,6 +48,7 @@ class SeriesDefinition:
     
     def __post_init__(self) -> None:
         # Fall back to title-cased label if no pretty display string is specified
+        logger.debug(f"{self.label=}")
         if self.display_label is None:
             self.display_label = self.label.replace("_", " ").title()
 
@@ -57,23 +62,46 @@ class SeriesDefinition:
         }
 
 @dataclass(slots=True)
-class SeriesMemory(SeriesDefinition):
+class SeriesMemory:
     """
     A series with an observation attribute held in memory
 
     from_dict() is not necesary because the best dict is not a dict but is instead a SeriesMemory instance.
     """
+    definition: SeriesDefinition
     observations: list[Observation] = field(default_factory=list)
+    
+    
+    logger.debug(f"{observations=}")
+    def consume_observation(self,observation:Observation):
+        """The rich man's append."""
+        logger.debug(f"{self.definition=}")
+        logger.debug(f"{observation=}")
+        logger.debug(f"{self.observations=}")
+        self.observations.append(observation)
+
+class SeriesMemory:
+    __slots__ = ("definition", "observations")  # slots=True behavior
+
+    def __init__(self, definition: SeriesDefinition, observations: list[Observation] = None) -> None:
+        self.definition = definition
+        self.observations = observations if observations is not None else []
+        self.__post_init__()
+
+    def __post_init__(self) -> None:
+        # Runs automatically right after __init__ finishes
+        logger.debug(f"Initialized SeriesMemory for: {self.definition.label}")
+
+    def __repr__(self) -> str:
+        """See with !r operator, like: logger.debug(f"Current series_memory_instance state: {series_memory_instance!r}")"""
+        return f"SeriesMemory(definition={self.definition!r}, observations={self.observations!r})"
     
     def consume_observation(self,observation:Observation):
         """The rich man's append."""
+        logger.debug(f"{self.definition=}")
+        logger.debug(f"{observation=}")
+        #logger.debug(f"{self.observations=}")
         self.observations.append(observation)
-
-    def to_dict(self) -> dict:
-        # Pull parent definitions and merge in the historical observations
-        base = super().to_dict()
-        base["observations"] = [obs.to_dict() for obs in self.observations]
-        return base
 
 @dataclass(slots=True)
 class EntityTrack:

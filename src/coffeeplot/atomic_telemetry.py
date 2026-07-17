@@ -4,6 +4,10 @@ import json
 import os
 import uuid
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)    
+
 from coffeeplot.plot_boundary import Observation, SeriesMemory, SeriesDefinition
 from coffeeplot.plot_buffer import PlotBuffer
 
@@ -14,14 +18,13 @@ class AtomicTelemetryLogger:
     Should consume Series Definiton
     """
     def __init__(self, filepath: str | Path) -> None:
-        self.filepath = filepath
+        self.filepath = Path(filepath).expanduser().resolve()
         self.series_definitions: dict[uuid.UUID, SeriesDefinition]={}
         self.ensurepath()
     
     def ensurepath(self):
         self.filepath.parent.mkdir(parents=True, exist_ok=True)
         
-    
     def register_series_definition(self,series_definition:SeriesDefinition) -> None:
         self.series_definitions[series_definition.uuid] = series_definition
 
@@ -33,7 +36,7 @@ class AtomicTelemetryLogger:
         # Package a flat structure to minimize disk overhead
         # are you sure? the key will be duplicated every write
         log_entry = {
-            "uuid": self.series_uuid, 
+            "uuid": str(series_uuid), 
             "t": obs.timestamp, # required value
             "v": obs.value,
             "idx": obs.index,
@@ -54,17 +57,9 @@ def run_telemetry_demo():
     #from pipeline_eds.schema import Observation
     #from pipeline_eds.logger import AtomicTelemetryLogger
 
-
     # 1. Spin up components
-    series_definition_flow = SeriesDefinition()
-    series_definition_flow.label = "flow_rate_0"
-    series_definition_flow.unit = "MGD"
-    series_definition_flow.display_label = "Influent Flow Rate"
-
-    series_definition_temp = SeriesDefinition()
-    series_definition_temp.label = "temperature_0"
-    series_definition_temp.unit = "deg F"
-    series_definition_temp.display_label = "Atmospheric Temp"
+    series_definition_flow = SeriesDefinition(label = "flow_rate_0", unit = "MGD", display_label = "Influent Flow Rate")
+    series_definition_temp = SeriesDefinition(label = "temperature_0", unit = "deg F", display_label = "Atmospheric Temp")
 
     disk_logger = AtomicTelemetryLogger("data/telemetry_log.jsonl")
 
@@ -78,11 +73,13 @@ def run_telemetry_demo():
     ui_buffer.register_series_definition(series_definition_temp, max_len = 50)
 
     # in case you are in a special static limied data situation
+    print(f"{series_definition_flow=}")
     series_memory_flow = SeriesMemory(series_definition_flow)
     series_memory_temp = SeriesMemory(series_definition_temp)
 
     # 2. Simulated Live Data Stream
-    while True:
+    #while True:
+    for _ in range(3):
         # Simulating sensor acquisition
         sensor_value_flow = 24.5 + (time.time() % 10) * 0.1
         sensor_value_temp = 999 + (time.time() % 10) * 0.2
@@ -91,14 +88,15 @@ def run_telemetry_demo():
         obs_flow = Observation(value=sensor_value_flow, timestamp=time.time())
         obs_temp = Observation(value=sensor_value_temp, timestamp=time.time())
 
-        disk_logger.consume_observation(series_definition_flow.id,obs_flow)
-        disk_logger.consume_observation(series_definition_temp.id,obs_temp)
+        disk_logger.consume_observation(series_definition_flow.uuid,obs_flow)
+        disk_logger.consume_observation(series_definition_temp.uuid,obs_temp)
         
         # STEP B: Volatile UI buffer (Consume & discard old points out of memory)
-        ui_buffer.consume_observation(series_definition_flow.id, obs_flow)
-        ui_buffer.consume_observation(series_definition_temp.id, obs_temp)
+        ui_buffer.consume_observation(series_definition_flow.uuid, obs_flow)
+        ui_buffer.consume_observation(series_definition_temp.uuid, obs_temp)
     
         # Step C (don't do this, unless you are bulding a static plot with limited data)
+        # uncommente to troubleshoot
         series_memory_flow.consume_observation(obs_flow)# the rich man's .append()
         series_memory_temp.consume_observation(obs_temp)# the rich man's .append()
         
@@ -107,3 +105,5 @@ def run_telemetry_demo():
         
         time.sleep(1.0)
 
+if __name__ == "__main__":
+    run_telemetry_demo()
