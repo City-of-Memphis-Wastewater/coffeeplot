@@ -1,0 +1,109 @@
+[project]
+name = "coffeeplot"
+dynamic = ["version"]
+
+description = "A Python API pipeline library and CLI toolkit for Emerson Ovation EDS systems — built for engineers, control technicians, and wastewater SCADA teams."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9,<3.15"
+authors = [
+    { name = "George Clayton Bennett", email = "george.bennett@memphistn.gov" }
+]
+maintainers = [
+    { name = "George Clayton Bennett", email = "george.bennett@memphistn.gov" }
+]
+
+dependencies = [
+    "backports.tarfile>=1.2",
+    "colorama>=0.4.6",
+    "distro>=1.9.0",
+    "pendulum>=3.1.0; python_version >= '3.9'",
+    "plotly>=6.2.0",
+    "pyyaml>=6.0.2,<7.0.0",
+    "requests>=2.32.3,<3.0.0",
+    "rich>=14.1.0; python_version >= '3.10'",
+    "rich>=10.14.0; python_version < '3.10'",
+    "suds-py3>=1.4.5.0",
+    "msgspec>=0.19.0; python_version >= '3.9'",
+    "starlette>=0.50.0; python_version >= '3.10'",
+    "starlette>=0.47.3; python_version == '3.9.*'",
+    "tzdata>=2025.2",
+    "urllib3>=2.4.0; python_version >= '3.9'",
+    "uvicorn>=0.34.3; python_version >= '3.9'",
+    "python-multipart>=0.0.20",
+    "toml>=0.10.2",
+    "typer>=0.17.4",
+    "typer-helptree>=0.2.11",
+    "dworshak-prompt>=0.3.11",
+    "openpyxl>=3.1.5",
+    "pyhabitat>=1.3.9",
+    "flask>=3.1.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/city-of-memphis-wastewater/coffeeplot"
+Repository = "https://github.com/city-of-memphis-wastewater/coffeeplot"
+
+[project.optional-dependencies]
+localdb_fallback_windows = [
+    "pyodbc>=5.1.0",
+    "mysql-connector-python>=9.3.0; python_version >= '3.9'",
+]
+mpl = [
+    "matplotlib>=3.11.0; python_version >= '3.11'",
+    "matplotlib>=3.5.0; python_version < '3.11'", 
+]
+crypto = [
+    "cryptography>=46.0.3",
+    "dworshak-secret[crypto]",
+    "dworshak-prompt[crypto]",
+]
+
+[project.scripts]
+eds = "coffeeplot.__main__:app"
+coffeeplot = "coffeeplot.__main__:app"
+
+[dependency-groups]
+test = [
+    "pytest>=8.4.1; python_version >= '3.9'",
+    "pytest-cov>=6.2.1; python_version >= '3.9'",
+]
+
+dev = [
+    "pygal>=3.0.5",
+    "pyinstaller>=6.16.0; platform_system == 'Linux' and platform_machine != 'aarch64'",
+    "shiv>=1.0.8",
+    "cffi>=1.17.0",
+    "vulture>=2.16",
+    "pydeps>=3.0.2",
+    "coverage>=7.10.7",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --cov=coffeeplot --cov-report=term-missing"
+testpaths = ["tests"]
+#pythonpath = ["src", "."]
+pythonpath = ["src"]
+
+[tool.uv]
+package = true
+#default-groups = ["dev", "test"]
+default-groups = []
+
+[tool.uv.sources]
+# If using a local path for dev:
+coffeeplot = { workspace = true }
+#coffeeplot = { path = "." }
+#pyhabitat = { path = "../pyhabitat/dist/pyhabitat-1.3.9-py3-none-any.whl" }
+#dworshak-config = { path = "../dworshak-config/dist/dworshak_config-0.2.8-py3-none-any.whl" }
+#dworshak-env = { path = "../dworshak-env/dist/dworshak_env-0.1.8-py3-none-any.whl" }
+#dworshak-secret = { path = "../dworshak-secret/dist/dworshak_secret-1.3.5.1-py3-none-any.whl" }
+#dworshak-prompt = { path = "../dworshak-prompt/dist/dworshak_prompt-0.3.9.1-py3-none-any.whl" }
+#typer-helptree = { path = "../typer-helptree/dist/typer_helptree-0.2.10.4-py3-none-any.whl" }
+
+[build-system]
+requires = ["setuptools>=75.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {file = "src/coffeeplot/VERSION"}
