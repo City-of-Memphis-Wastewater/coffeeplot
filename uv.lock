@@ -335,10 +335,12 @@ dev = [
     { name = "coverage", version = "7.15.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pydeps", version = "3.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pydeps", version = "3.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "pygal" },
     { name = "pyinstaller", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
     { name = "shiv" },
     { name = "vulture" },
+]
+svg = [
+    { name = "pygal" },
 ]
 test = [
     { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -374,11 +376,11 @@ dev = [
     { name = "cffi", specifier = ">=1.17.0" },
     { name = "coverage", specifier = ">=7.10.7" },
     { name = "pydeps", specifier = ">=3.0.2" },
-    { name = "pygal", specifier = ">=3.0.5" },
     { name = "pyinstaller", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'", specifier = ">=6.16.0" },
     { name = "shiv", specifier = ">=1.0.8" },
     { name = "vulture", specifier = ">=2.16" },
 ]
+svg = [{ name = "pygal", specifier = ">=3.0.5" }]
 test = [
     { name = "pytest", marker = "python_full_version >= '3.9'", specifier = ">=8.4.1" },
     { name = "pytest-cov", marker = "python_full_version >= '3.9'", specifier = ">=6.2.1" },
