@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 from coffeeplot.plot_boundary import Observation, SeriesMemory, SeriesDefinition
 from coffeeplot.plot_buffer import PlotBuffer
+from .context import DATABASE_DIR
+
+DEFAULT_TELEMETRY_LOG = DATABASE_DIR / "telemetry_log.jsonl"
 
 class AtomicTelemetryLogger:
     """
@@ -61,7 +64,7 @@ def run_telemetry_demo():
     series_definition_flow = SeriesDefinition(label = "flow_rate_0", unit = "MGD", display_label = "Influent Flow Rate")
     series_definition_temp = SeriesDefinition(label = "temperature_0", unit = "deg F", display_label = "Atmospheric Temp")
 
-    disk_logger = AtomicTelemetryLogger("data/telemetry_log.jsonl")
+    disk_logger = AtomicTelemetryLogger(filepath = DEFAULT_TELEMETRY_LOG)
 
     disk_logger.register_series_definition(series_definition_flow)
     disk_logger.register_series_definition(series_definition_temp)
