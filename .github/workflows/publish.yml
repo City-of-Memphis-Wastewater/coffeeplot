@@ -41,8 +41,8 @@ jobs:
         # NOTE: `uv pip install .` installs the package itself and its dependencies
         run: uv sync --group dev
 
-      - name: Ensure updated copies of packaged data files
-        run: uv run python src/coffeeplot/datacopy.py
+      #- name: Ensure updated copies of packaged data files
+      #  run: uv run python src/coffeeplot/datacopy.py
 
       - name: Build S-Dist and Wheel
         # This command uses the `build` package installed in the VENV to create package files.
