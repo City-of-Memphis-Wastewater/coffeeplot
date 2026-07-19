@@ -5,6 +5,9 @@ from dworshak_config import DworshakConfig
 
 APP_NAME = "coffeeplot"
 APP_DIR = Path.home() / f".{APP_NAME}"
-APP_DIR.mkdir(parents=True, exist_ok=True)
+EXPORT_DIR = APP_DIR / "export"
+DATABASE_DIR = APP_DIR / "database"
+DATABASE_DIR.mkdir(parents=True, exist_okay=True)
 
 config_mngr = DworshakConfig(path=APP_DIR / "config.json")
+config_mngr.set(service=APP_NAME,item="null","null")
