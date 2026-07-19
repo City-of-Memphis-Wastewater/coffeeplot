@@ -1,0 +1,120 @@
+# .github/workflows/flatpak.yml
+name: Build Flatpak Bundle
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  flatpak:
+    name: Build Flatpak Application
+    runs-on: ubuntu-latest
+    # Run inside the official Flathub builder container environment
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
+      options: --privileged
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+
+      - name: Get Flatpak Builder Tools
+        if: false
+        run: |
+          git clone https://github.com/flatpak/flatpak-builder-tools.git
+
+      - name: generate requirements.txt
+        run: |
+          uv export --format requirements-txt --no-editable --no-dev > requirements.txt
+          
+      - name: Vendor Python Dependencies for Sandbox Environment
+        run: |
+          mkdir -p vendor-wheels
+
+          uv build
+
+          #uv run pip download . -d vendor-wheels
+          #uv run pip download . "setuptools>=64" -d vendor-wheels
+          #uv run pip download . "setuptools>=64" 
+          uv run pip download \
+            dist/*.whl \
+            -d vendor-wheels
+
+      - name: Check wheels
+        run: |
+          echo "Vendor wheels:"
+          ls -lah vendor-wheels
+
+          echo
+          echo "Downloaded packages:"
+          find vendor-wheels -name '*.whl'
+          echo "Contents of vendor-wheels:"
+          find vendor-wheels -maxdepth 1 -name '*.whl' | sort
+
+          echo
+          echo "Wheel count:"
+          find vendor-wheels -name '*.whl' | wc -l
+
+      - name: Compute build metadata
+        run: |
+          VERSION=$(uv run python -c "from copy_n_launch_xlsx._version import get_version; print(get_version())")
+          ARCH=$(uname -m)
+          SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          FILENAME="copy-n-launch-xlsx-${VERSION}-${ARCH}.flatpak"
+
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "ARCH=$ARCH" >> $GITHUB_ENV
+          echo "SHA=$SHA" >> $GITHUB_ENV
+          echo "FILENAME=$FILENAME" >> $GITHUB_ENV
+          
+      - name: Build and Package Flatpak Bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: io.github.city_of_memphis_wastewater.copy_n_launch_xlsx.yaml
+          #bundle: copy-n-launch-xlsx.flatpak
+          #bundle: copy-n-launch-xlsx-${{ env.VERSION }}-${{ env.ARCH }}.flatpak
+          bundle: ${{ env.FILENAME }}
+          run-tests: false
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Debug output files
+        run: |
+          find . -name "*.flatpak" -ls
+          
+      - name: Install for Smoke test
+        run: |
+          #flatpak install --user --bundle --noninteractive ./copy-n-launch-xlsx.flatpak
+          #flatpak install --user --bundle --noninteractive ./${{ env.FILENAME }}
+          FLATPAK_FILE=$(find . -name "*.flatpak" | head -n 1)
+          flatpak install --user --bundle --noninteractive "$FLATPAK_FILE"
+          flatpak list
+          flatpak info io.github.city_of_memphis_wastewater.copy_n_launch_xlsx
+
+      - name: Assert CLI works, smoke test
+        run: |
+          set -e
+          flatpak run io.github.city_of_memphis_wastewater.copy_n_launch_xlsx --help
+          flatpak run io.github.city_of_memphis_wastewater.copy_n_launch_xlsx --version
+          flatpak run io.github.city_of_memphis_wastewater.copy_n_launch_xlsx copylaunch --help
+
+      - name: Attach Flatpak Asset to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v3
+        with:
+          #files: ${{ env.FILENAME }}
+          files: "*.flatpak"
+          overwrite_files: true
+          # Use the release tag if available, otherwise default to a test tag or draft
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v0.0.0-draft' }}
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

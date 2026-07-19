@@ -1,0 +1,217 @@
+# .github/workflows/build.yml
+
+name: Build artifacts
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        mode: [onedir, onefile]
+        # Exclude options that are redundant or invalid for specific environments
+        exclude:
+          - os: ubuntu-latest
+            mode: onefile
+          - os: macos-latest
+            mode: onefile
+          
+    steps:
+      - name: Clean Build Directories (Unix/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          echo "Cleaning build directories..."
+          rm -rf dist/ build/ *.egg-info
+          echo "Clean complete."
+          
+      - name: Clean Build Directories (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          echo "Cleaning build directories..."
+          # Use Remove-Item with -Recurse and -Force (PowerShell native)
+          Remove-Item -Path dist/, build/, *.egg-info -Recurse -Force -ErrorAction SilentlyContinue
+          echo "Clean complete."
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Install Python with Tkinter via uv (macOS)
+        if: true # runner.os == 'macOS'
+        run: |
+          # Force uv to download a Python build that includes framework/GUI support
+          uv python install 3.12 --preview
+
+      - name: Install DMG Builder (macOS)
+        if: runner.os == 'macOS'
+        run: brew install create-dmg
+
+      - name: Install appimagetool (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
+          
+          # Force the tool to run via filesystem extraction inside headless containers
+          echo "APPIMAGE_EXTRACT_AND_RUN=1" >> $GITHUB_ENV
+
+      - name: Install build dependencies
+        run: |
+          uv sync --group dev
+          uv pip install pyinstaller # assurance
+
+      - name: Build wheel & sdist
+        if: matrix.os == 'ubuntu-latest' # ONLY build this once
+        run: uv run python -m build --sdist
+
+      - name: Build PYZ (shiv)
+        run: |
+          uv run python build_pyz.py
+          uv run python -c "from pathlib import Path; print('===== DIST ====='); [print(p) for p in sorted(Path('dist').rglob('*'))]"
+          
+      - name: Build executable (PyInstaller)
+        run: |
+          uv run python build_executable.py --mode ${{ matrix.mode }}
+      
+      - name: Post-Build Cleanup (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "Removing redundant generic artifacts from both Windows builds..."
+          # Remove sdist and wheel to prevent Release upload collisions with the Ubuntu runner's versions
+          Remove-Item "dist/*.tar.gz" -ErrorAction SilentlyContinue
+          Remove-Item "dist/*.whl" -ErrorAction SilentlyContinue
+          Write-Host "Cleanup complete."
+
+      - name: Post-Build Cleanup (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          echo "Removing redundant generic artifacts from macOS build..."
+          # Delete sdist and wheel to prevent collisions with the Ubuntu runner
+          rm -f dist/*.tar.gz dist/*.whl
+          echo "Cleanup complete."
+
+      # --- DEEP VERBOSE DIAGNOSTIC DISCOVERY ---
+      - name: Diagnostic, List Every Single Output File
+        shell: pwsh
+        run: |
+          Write-Host "========================================="
+          Write-Host "     CRITICAL BUILD DIRECTORY TREE       "
+          Write-Host "========================================="
+          if (Test-Path dist) {
+              # Recursive file search to reveal exactly what PyInstaller named the outputs
+              # Get-ChildItem dist -Recurse | Select-Object FullName, Length, PSIsContainer | Format-Table -AutoSize
+              Get-ChildItem dist -Recurse |
+                  Select-Object @{
+                      Name='Path'
+                      Expression = {
+                          (Resolve-Path -Relative $_.FullName) -replace '^[\\/]*dist[\\/]?', ''
+                      }
+                  }, Length, PSIsContainer |
+                  Format-Table -AutoSize
+          } else {
+              Write-Error "CRITICAL: The dist/ folder doesn't even exist!"
+          }
+          Write-Host "========================================="
+
+      # --- 3. TEMPORARY SWAP-IN TO BYPASS BREAKING ACTIONS ---
+      - name: Safe Search and Collect Setup
+        shell: pwsh
+        run: |
+          Write-Host "Scanning for artifact targets..."
+          # Instead of throwing code 1 if missing, check soft-matching contents
+          $has_onedir = Test-Path "dist/onedir/*"
+          $has_onefile = Test-Path "dist/onefile/*"
+          Write-Host "Contains onedir contents: $has_onedir"
+          Write-Host "Contains onefile contents: $has_onefile"
+
+      # --- WINDOWS COLLECTOR ---
+      - name: Collect Windows artifacts
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -Path dist/upload -ItemType Directory -Force
+          
+          # Safely look for whatever this specific matrix runner actually generated
+          if (Test-Path "dist/onedir") {
+              Get-ChildItem "dist/onedir" -Directory | ForEach-Object {
+                  $destination = "dist/upload/$($_.Name).zip"
+                  Write-Host "Archiving directory $($_.FullName) to $destination"
+                  Compress-Archive -Path "$($_.FullName)\*" -DestinationPath $destination -Force
+              }
+          }
+          if (Test-Path "dist/onefile") {
+              Get-ChildItem "dist/onefile" -File | ForEach-Object {
+                  # Strip the .exe out of the archive base name so you don't get .exe.zip
+                  $baseName = $_.BaseName
+                  $destination = "dist/upload/$baseName.zip"
+                  Write-Host "Archiving binary $($_.FullName) to $destination"
+                  Compress-Archive -Path $_.FullName -DestinationPath $destination -Force
+              }
+          }
+
+      # --- Ubuntu PYZ & APPIMAGE COLLECTOR ---
+      - name: Collect Linux artifacts
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p dist/upload
+
+          echo "Staging Linux Wheel, PYZ, and AppImage artifacts..."
+          cp dist/*.whl dist/upload/ 2>/dev/null || true
+          cp dist/*.tar.gz dist/upload/ 2>/dev/null || true
+          cp dist/*.pyz dist/upload/ 2>/dev/null || true
+          cp dist/zipapp/*.pyz dist/upload/ 2>/dev/null || true
+          find dist -maxdepth 2 -name "*.AppImage" -exec cp {} dist/upload/ \;
+          
+          echo "Linux artifact staging complete."
+
+      # --- macOS COLLECTOR ---
+      - name: Collect macOS artifacts
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dist/upload
+          
+          # ZipApp and other loose files are safely verified here
+          for item in dist/zipapp/*; do
+            [ -e "$item" ] || continue
+            if [ -f "$item" ]; then
+              cp "$item" dist/upload/
+            fi
+          done
+          
+          echo "macOS DMG pipeline successfully handled downstream by build_executable.py."
+
+      # --- STAGE TARGETS INTERNALLY ---
+      - name: Upload Intermediary Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-artifacts-${{ matrix.os }}-${{ matrix.mode }}
+          path: dist/upload/*
+          retention-days: 1
+
+      # --- Attach all builds to release ---
+      - name: Attach artifacts to GitHub Release Immediately
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/upload/*
+          overwrite_files: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
