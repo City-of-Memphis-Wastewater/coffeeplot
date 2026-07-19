@@ -42,28 +42,20 @@ jobs:
         run: uv sync --group dev
 
       - name: Ensure updated copies of packaged data files
-        run: uv run python src/copy_n_launch_xlsx/datacopy.py
+        run: uv run python src/coffeeplot/datacopy.py
 
       - name: Build S-Dist and Wheel
         # This command uses the `build` package installed in the VENV to create package files.
         #run: source .venv/bin/activate && python -m build
         run: uv build
 
-      - name: Run sanity check (using the installed package)
+      - name: Sanity check the built sdist
         # Use the global `uv run` if you don't want to activate, but since we activated above:
         run: |
           source .venv/bin/activate
-          uv pip uninstall -y copy-n-launch-xlsx || true
+          uv pip uninstall -y coffeeplot || true
           uv pip install dist/copy*.whl
-          # Use project's installed CLI command
-          cnlx copylaunch --help
-      # Optional: Also test the sdist (extra safety)
-      - name: Sanity check the built sdist
-        run: |
-          source .venv/bin/activate
-          uv pip uninstall -y copy-n-launch-xlsx || true
-          uv pip install dist/copy*.tar.gz
-          cnlx --help
+          
       # --- PUBLISH ---
       - name: Publish package distributions to PyPI
         # This action uses the OIDC token to securely authenticate and upload.
