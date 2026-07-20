@@ -29,5 +29,5 @@ jobs:
       - name: Run tests
         run: |
           cd "coffeeplot"
-          uv sync --group dev
+          uv sync --group dev --group test
           uv run pytest -v
