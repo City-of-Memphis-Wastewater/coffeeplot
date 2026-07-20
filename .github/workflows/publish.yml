@@ -54,7 +54,7 @@ jobs:
         run: |
           source .venv/bin/activate
           uv pip uninstall -y coffeeplot || true
-          uv pip install dist/copy*.whl
+          uv pip install dist/coffeeplot*.whl
           
       # --- PUBLISH ---
       - name: Publish package distributions to PyPI

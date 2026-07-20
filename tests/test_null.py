@@ -4,4 +4,5 @@ Out here spoofing.
 '''
 
 def test_null():
-    pass
+    from coffeeplot.context import APP_NAME
+    assert APP_NAME == "coffeeplot"
