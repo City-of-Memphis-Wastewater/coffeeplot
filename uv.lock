@@ -323,8 +323,6 @@ web = [
 dev = [
     { name = "cffi", version = "2.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "cffi", version = "2.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "coverage", version = "7.15.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pydeps", version = "3.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pydeps", version = "3.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pyinstaller", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
@@ -332,6 +330,8 @@ dev = [
     { name = "vulture" },
 ]
 test = [
+    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "coverage", version = "7.15.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pytest", version = "9.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pytest-cov" },
@@ -359,13 +359,13 @@ provides-extras = ["mpl", "typer", "web", "svg"]
 [package.metadata.requires-dev]
 dev = [
     { name = "cffi", specifier = ">=1.17.0" },
-    { name = "coverage", specifier = ">=7.10.7" },
     { name = "pydeps", specifier = ">=3.0.2" },
     { name = "pyinstaller", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'", specifier = ">=6.16.0" },
     { name = "shiv", specifier = ">=1.0.8" },
     { name = "vulture", specifier = ">=2.16" },
 ]
 test = [
+    { name = "coverage", specifier = ">=7.10.7" },
     { name = "pytest", marker = "python_full_version >= '3.9'", specifier = ">=8.4.1" },
     { name = "pytest-cov", marker = "python_full_version >= '3.9'", specifier = ">=6.2.1" },
 ]

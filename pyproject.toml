@@ -55,6 +55,7 @@ svg = [
 test = [
     "pytest>=8.4.1; python_version >= '3.9'",
     "pytest-cov>=6.2.1; python_version >= '3.9'",
+    "coverage>=7.10.7",
 ]
 
 dev = [
@@ -63,7 +64,6 @@ dev = [
     "cffi>=1.17.0",
     "vulture>=2.16",
     "pydeps>=3.0.2",
-    "coverage>=7.10.7",
 ]
 
 [tool.pytest.ini_options]
@@ -74,8 +74,8 @@ pythonpath = ["src"]
 
 [tool.uv]
 package = true
-#default-groups = ["dev", "test"]
-default-groups = []
+default-groups = ["dev", "test"]
+#default-groups = []
 
 [tool.uv.sources]
 # If using a local path for dev:
