@@ -39,7 +39,7 @@ jobs:
       - name: Create isolated environment and install build dependencies
         # Use uv to install `build` and all dependencies specified in `pyproject.toml`
         # NOTE: `uv pip install .` installs the package itself and its dependencies
-        run: uv sync --group dev
+        run: uv sync --group dev --group test
 
       #- name: Ensure updated copies of packaged data files
       #  run: uv run python src/coffeeplot/datacopy.py
