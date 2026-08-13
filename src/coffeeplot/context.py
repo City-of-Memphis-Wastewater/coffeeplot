@@ -12,6 +12,7 @@ EXPORT_DIR = APP_DIR / "export"
 DATABASE_DIR = APP_DIR / "database"
 DATABASE_DIR.mkdir(parents=True, exist_ok=True)
 DESCRIPTION_STR = pyproject.get("project","description")
-
+SRC_FOLDER_NAME = pyproject.import_name
 config_mngr = DworshakConfig(path=APP_DIR / "config.json")
 config_mngr.set(service=APP_NAME,item="null",value="null")
+LOG_FILE_PATH = APP_DIR / "log.log"
