@@ -5,7 +5,7 @@ dynamic = ["version"]
 description = "Yet another plotting toolkit. Termux friendly."
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9,<3.15"
+requires-python = ">=3.10,<3.15"
 authors = [
     { name = "George Clayton Bennett", email = "george.bennett@memphistn.gov" }
 ]
@@ -61,6 +61,7 @@ test = [
 dev = [
     "vulture>=2.16",
     "pydeps>=3.0.2",
+    "maxson-build-utils>=0.1.21"
 ]
 
 [tool.pytest.ini_options]
